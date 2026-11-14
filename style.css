@@ -1,0 +1,658 @@
+body {
+    background-color: #111;
+    background-image: url('dungeon-bg.jpg');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+    color: #f0f0f0;
+    font-family: 'DotGothic16', monospace, sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    height: 100dvh;
+    margin: 0;
+    overflow: hidden;
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+    perspective: 1000px;
+}
+
+/* ★ ダンジョン入口へのズームイン・暗転用独立オーバーレイ層 */
+#dungeon-zoom-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-image: url('dungeon-bg.jpg');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    /* ダンジョンの暗い入り口（穴）の正確な位置（横50%、縦38%）を起点に拡大する */
+    transform-origin: 50% 38%;
+    z-index: 9999;
+    pointer-events: none;
+    opacity: 0;
+    visibility: hidden;
+    will-change: transform, filter, opacity;
+}
+
+#dungeon-zoom-overlay.active {
+    visibility: visible;
+    opacity: 1;
+    animation: dungeonZoomIn 1.0s cubic-bezier(0.55, 0.055, 0.675, 0.19) forwards;
+}
+
+@keyframes dungeonZoomIn {
+    0% {
+        transform: scale(1) translateZ(0);
+        filter: brightness(1) contrast(1);
+    }
+    50% {
+        filter: brightness(0.7) contrast(1.3);
+    }
+    100% {
+        transform: scale(7.5) translateZ(500px);
+        filter: brightness(0.0) contrast(2.0);
+    }
+}
+
+img {
+    image-rendering: -webkit-optimize-contrast;
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+}
+
+#game-container {
+    border: 4px solid #8c6843;
+    box-shadow: 0 0 25px rgba(0,0,0,0.9);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+    box-sizing: border-box;
+    border-radius: 4px;
+    background-color: #16120e;
+    overflow: hidden;
+    z-index: 1;
+    transition: opacity 0.3s ease-out, transform 0.3s ease-out;
+}
+
+#game-container.fade-out {
+    opacity: 0;
+    transform: scale(0.92);
+}
+
+#game-container.screen-home {
+    width: 90%;
+    max-width: 380px;
+    height: 85%;
+    max-height: 620px;
+    padding: 16px;
+}
+
+#game-container.screen-wide {
+    width: 98%;
+    max-width: 740px;
+    height: 96%;
+    max-height: 92vh;
+    padding: 16px;
+}
+
+#game-container.screen-full {
+    width: 98% !important;
+    max-width: 780px !important;
+    height: 98% !important;
+    max-height: 96vh !important;
+    padding: 12px !important;
+}
+
+#game-container.battle-mode {
+    width: 100vw !important;
+    height: 100vh !important;
+    height: 100dvh !important;
+    max-width: none !important;
+    max-height: none !important;
+    border: none !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    background-color: transparent !important;
+    padding: 0 !important;
+}
+
+.screen {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    overflow-y: auto;
+    overflow-x: hidden;
+    max-height: 100%;
+    box-sizing: border-box;
+}
+
+.hidden {
+    display: none !important;
+}
+
+h1, h2 {
+    color: #ffd700;
+    text-shadow: 2px 2px #000;
+    margin-bottom: 8px;
+    font-size: 1.25rem;
+    text-align: center;
+    font-weight: normal;
+}
+
+.gold-box {
+    background-color: #120e0b;
+    border: 2px solid #a67c52;
+    box-shadow: inset 0 0 8px rgba(0,0,0,0.9);
+    padding: 10px 12px;
+    width: 100%;
+    margin-bottom: 8px;
+    box-sizing: border-box;
+    font-size: 0.85rem;
+    color: #f0e6d2;
+}
+
+.exp-bar-grid {
+    display: flex;
+    gap: 3px;
+    height: 14px;
+    background-color: #241d17;
+    border: 1px solid #594333;
+    padding: 2px;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.exp-block {
+    flex: 1;
+    background-color: #3b3026;
+    height: 100%;
+}
+
+.exp-block.filled {
+    background-color: #ffcc00;
+    box-shadow: inset 0 0 3px #ffa500;
+}
+
+.retro-btn {
+    width: 100%;
+    padding: 12px;
+    font-family: 'DotGothic16', monospace;
+    font-size: 0.9rem;
+    font-weight: normal;
+    color: #ffffff;
+    border-radius: 3px;
+    cursor: pointer;
+    text-shadow: 1px 1px 2px #000;
+    margin-bottom: 6px;
+    transition: transform 0.05s;
+}
+
+.retro-btn:active {
+    transform: translateY(2px);
+}
+
+.btn-green {
+    background: #254d28;
+    border: 2px solid #3d7e42;
+    box-shadow: inset 0 2px 0 #4caf50, 0 3px 0 #142b16;
+}
+
+.btn-brown {
+    background: #594333;
+    border: 2px solid #8c6950;
+    box-shadow: inset 0 2px 0 #a67c5e, 0 3px 0 #33261d;
+}
+
+.wooden-board {
+    width: 100%;
+    height: 270px;
+    background-color: #70421d;
+    background-image: 
+        linear-gradient(rgba(0,0,0,0.25), rgba(0,0,0,0.25)), 
+        repeating-linear-gradient(0deg, transparent, transparent 32px, rgba(40, 20, 5, 0.45) 32px, rgba(40, 20, 5, 0.45) 34px),
+        linear-gradient(90deg, #8a5225, #633816, #7a481f);
+    border: 6px solid #3d2311;
+    box-shadow: inset 0 0 20px rgba(0,0,0,0.85);
+    padding: 10px;
+    box-sizing: border-box;
+    overflow-y: auto;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    gap: 12px;
+    align-content: start;
+    border-radius: 2px;
+}
+
+.quest-note {
+    background: linear-gradient(135deg, #f7eed6 0%, #e2d1a8 100%);
+    color: #2b2219;
+    border: 1px solid #b59b73;
+    padding: 8px;
+    border-radius: 1px;
+    box-shadow: 2px 4px 8px rgba(0,0,0,0.5), inset 0 0 12px rgba(255,255,255,0.4);
+    cursor: pointer;
+    transition: transform 0.15s, box-shadow 0.15s;
+    font-family: 'DotGothic16', monospace;
+    height: 85px;
+    overflow: hidden;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    transform: rotate(-1deg);
+}
+
+.quest-note:nth-child(even) {
+    transform: rotate(1.5deg);
+}
+
+.quest-note.danger {
+    background: linear-gradient(135deg, #fce4e4 0%, #dfb1b1 100%);
+    border: 1px solid #b87a7a;
+}
+
+.quest-note:hover {
+    transform: scale(1.03) rotate(0deg);
+    box-shadow: 3px 6px 14px rgba(0,0,0,0.7);
+}
+
+@keyframes tear-off {
+    0% { transform: scale(1) rotate(0deg); opacity: 1; }
+    30% { transform: scale(1.08) rotate(-8deg); }
+    100% { transform: scale(0.1) translateY(140px) rotate(45deg); opacity: 0; }
+}
+.tearing {
+    animation: tear-off 0.4s ease-in forwards;
+}
+
+.parchment-card {
+    background: #e8dcc4;
+    color: #2b1d0c;
+    border: 2px solid #a68965;
+    padding: 12px;
+    border-radius: 2px;
+    box-shadow: 3px 4px 10px rgba(0,0,0,0.8);
+    font-family: 'DotGothic16', monospace;
+}
+
+.ut-choices-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    width: 100%;
+}
+
+.choice-btn {
+    background-color: #241c16;
+    color: #fff;
+    border: 2px solid #c8a268;
+    box-shadow: inset 0 0 6px rgba(0,0,0,0.8);
+    padding: 10px 12px;
+    width: 100%;
+    text-align: left;
+    font-family: 'DotGothic16', monospace;
+    font-size: 0.85rem;
+    font-weight: normal;
+    cursor: pointer;
+    margin-bottom: 0;
+    border-radius: 3px;
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    min-height: 46px;
+    line-height: 1.3;
+    word-break: break-all;
+    white-space: normal;
+}
+
+.choice-btn:hover:not(:disabled) {
+    background-color: #3b2d22;
+    border-color: #ffd700;
+}
+
+.choice-btn:active:not(:disabled) {
+    background-color: #4a382c;
+    border-color: #fff;
+    transform: translateY(1px);
+}
+
+.choice-btn:disabled {
+    background-color: #0d0a08;
+    color: #665544;
+    border-color: #3b2e22;
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+.pixel-input {
+    width: 100%;
+    background: rgba(26, 20, 16, 0.9);
+    border: 2px solid #6b533f;
+    color: #fff;
+    padding: 6px;
+    font-family: 'DotGothic16', monospace;
+    font-size: 0.85rem;
+    font-weight: normal;
+    box-sizing: border-box;
+    margin-top: 4px;
+    margin-bottom: 6px;
+}
+
+.heart-container-large {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+}
+
+.heart-img-large {
+    width: 24px;
+    height: 24px;
+    object-fit: contain;
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+}
+
+.heart-img-large.lost {
+    filter: brightness(0.2) grayscale(100%);
+    transform: scale(0.85);
+}
+
+@keyframes heart-break {
+    0% { transform: scale(1); filter: brightness(1); }
+    30% { transform: scale(1.5); filter: brightness(2) drop-shadow(0 0 8px red); }
+    60% { transform: scale(1.2) rotate(15deg); filter: brightness(3) sepia(1) hue-rotate(-50deg); opacity: 0.8; }
+    100% { transform: scale(0) rotate(-30deg); opacity: 0; filter: brightness(0); }
+}
+
+.break-animation {
+    animation: heart-break 0.5s ease-out forwards;
+}
+
+@keyframes enemyBlink {
+    50% { opacity: 0; }
+}
+.die {
+    animation: enemyBlink 0.15s steps(1) 4;
+}
+
+@keyframes shake-anim {
+    25% { transform: translateX(-6px); }
+    75% { transform: translateX(6px); }
+}
+.shk {
+    animation: shake-anim 0.3s steps(1);
+}
+
+/* ===== 横スクロールのステージ（ダンジョンの雰囲気に合わせたデザイン） ===== */
+#sc-stage {
+    position: relative;
+    width: 100%;
+    height: 192px;
+    border: 2px solid #8c6747;
+    overflow: hidden;
+    background: #0b0907;
+    margin-bottom: 6px;
+    flex-shrink: 0;
+    box-shadow: inset 0 0 12px rgba(0,0,0,0.9);
+}
+#wall-layer, #floor-layer {
+    position: absolute;
+    left: 0;
+    right: 0;
+    background-repeat: repeat-x;
+}
+/* たいまつの明かりのゆらぎ */
+#sc-stage::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; right: 0; bottom: 0;
+    z-index: 3;
+    pointer-events: none;
+    background: rgba(255, 170, 60, 0.03);
+    animation: torchFlicker 1.6s steps(2) infinite;
+}
+@keyframes torchFlicker {
+    50% { background: rgba(255, 170, 60, 0.06); }
+}
+/* 上と四隅を暗くして、奥行きを出す */
+#sc-stage::after {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; right: 0; bottom: 0;
+    z-index: 4;
+    pointer-events: none;
+    background:
+        linear-gradient(rgba(0,0,0,0.55), rgba(0,0,0,0) 40%),
+        radial-gradient(ellipse at 50% 60%, rgba(0,0,0,0) 45%, rgba(0,0,0,0.7) 100%);
+}
+#player-sprite, #enemy-sprite {
+    position: absolute;
+    z-index: 2;
+}
+#enemy-sprite { left: 100%; }
+/* 足元の影 */
+#player-sprite::after, #enemy-sprite::after {
+    content: '';
+    position: absolute;
+    left: 8%; right: 8%; bottom: -4px;
+    height: 7px;
+    background: rgba(0,0,0,0.5);
+    border-radius: 50%;
+    z-index: -1;
+}
+/* 空気中のほこり */
+.mote {
+    position: absolute;
+    width: 3px; height: 3px;
+    background: #ffcc66;
+    opacity: 0;
+    z-index: 3;
+    pointer-events: none;
+    animation: moteFloat 6s steps(12) infinite;
+}
+.m1 { left: 12%; top: 70%; animation-delay: 0s; }
+.m2 { left: 30%; top: 55%; animation-delay: 1.2s; }
+.m3 { left: 52%; top: 75%; animation-delay: 2.4s; }
+.m4 { left: 71%; top: 60%; animation-delay: 3.6s; }
+.m5 { left: 88%; top: 72%; animation-delay: 4.8s; }
+@keyframes moteFloat {
+    0% { transform: translate(0, 0); opacity: 0; }
+    20% { opacity: 0.6; }
+    100% { transform: translate(12px, -60px); opacity: 0; }
+}
+#battle-message-overlay {
+    position: absolute;
+    top: 6px; left: 0; right: 0;
+    text-align: center;
+    color: #ffcc00;
+    text-shadow: 1px 1px #000;
+    font-size: 0.8rem;
+    pointer-events: none;
+    z-index: 6;
+}
+
+
+/* ===== クエスト中：背景は暗いダンジョンの中（入口の絵は消える） ===== */
+body.in-dungeon {
+    background-image: none !important;
+    background-color: #030403;
+}
+
+/* 階の名前のカード */
+#floor-title {
+    position: fixed;
+    left: 0; top: 0; right: 0; bottom: 0;
+    z-index: 10000;
+    background: #000;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    color: #ffd700;
+    text-shadow: 3px 3px #000;
+    pointer-events: none;
+}
+#floor-title.on { display: flex; }
+#floor-title .ft-inner { opacity: 0; }
+#floor-title.show .ft-inner { animation: ftIn 0.5s steps(5) forwards; }
+#floor-title.out { animation: ftOut 0.5s steps(5) forwards; }
+@keyframes ftIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes ftOut { from { opacity: 1; } to { opacity: 0; } }
+#ft-floor { font-size: 3.4rem; letter-spacing: 0.2em; }
+#ft-sub { font-size: 1.1rem; color: #dcd0b8; margin-top: 6px; }
+
+
+/* ===== 画面いっぱいの横スクロール ===== */
+#battle-screen {
+    height: 100%;
+    max-height: 100%;
+    overflow-x: hidden;
+    overflow-y: auto;
+    justify-content: flex-start;
+    align-items: stretch;
+}
+#battle-hud {
+    flex: 1 1 auto;
+    min-height: 56px;
+    padding: 10px 16px 6px;
+    box-sizing: border-box;
+    background: linear-gradient(#020302, #060907);
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    gap: 6px;
+}
+.hud-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.95rem;
+    color: #ffcc00;
+    text-shadow: 1px 1px #000;
+}
+#battle-progress { color: #dcd0b8; }
+.hud-btn {
+    font-family: 'DotGothic16', monospace;
+    font-size: 0.75rem;
+    color: #b8a088;
+    background: #1a1410;
+    border: 1px solid #6b533f;
+    padding: 2px 8px;
+    cursor: pointer;
+}
+#sc-stage {
+    flex: none;
+    width: 100%;
+    height: 288px;
+    border: none;
+    margin: 0;
+    box-shadow: none;
+}
+#battle-panel {
+    flex: none;
+    height: 340px;
+    box-sizing: border-box;
+    padding: 10px 14px 8px;
+    background: rgba(6, 8, 7, 0.97);
+    border-top: 3px solid #8c6747;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    overflow: hidden;
+}
+#battle-panel > * {
+    width: 100%;
+    max-width: 860px;
+    box-sizing: border-box;
+}
+.status-row {
+    flex: none;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: #120e0b;
+    padding: 4px 8px;
+    border: 1px solid #8c6747;
+    min-height: 34px;
+}
+.hp-box { display: flex; align-items: center; gap: 6px; }
+.hp-label { color: #ff6666; font-size: 0.85rem; }
+#camp-container { display: flex; align-items: center; gap: 6px; font-size: 0.85rem; }
+.gold-box.q-box {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    margin: 0;
+    text-align: left;
+    padding: 10px 12px;
+}
+#question-text { margin: 0; font-size: 0.95rem; line-height: 1.45; word-break: break-all; }
+#battle-message { margin: 6px 0 0 0; font-size: 0.8rem; color: #ffcc00; word-break: break-all; }
+#choices-container { flex: none; }
+.home-row { flex: none; text-align: center; }
+.btn-subtle-home {
+    width: auto;
+    padding: 4px 14px;
+    font-size: 0.75rem;
+    background: #33261d;
+    border: 1px solid #6b533f;
+    color: #b8a088;
+    box-shadow: none;
+    margin: 0;
+}
+
+/* 主人公のランタンの明かり */
+#player-sprite::before {
+    content: '';
+    position: absolute;
+    left: -45%; bottom: -15%;
+    width: 120%; height: 90%;
+    background: radial-gradient(circle at 30% 65%, rgba(255, 190, 90, 0.3), rgba(255, 190, 90, 0) 60%);
+    z-index: -1;
+    pointer-events: none;
+}
+
+/* 攻撃と、敵が消える演出 */
+#player-sprite.lunge { animation: lunge 0.3s steps(3); }
+@keyframes lunge { 50% { transform: translateX(calc(var(--s, 3) * 8px)); } }
+.slash {
+    position: absolute;
+    background: #fff;
+    z-index: 5;
+    pointer-events: none;
+    transform: rotate(-35deg);
+    animation: slashAnim 0.3s steps(3) forwards;
+}
+@keyframes slashAnim {
+    0% { opacity: 1; transform: rotate(-35deg) scaleX(0.2); }
+    60% { opacity: 1; transform: rotate(-35deg) scaleX(1); }
+    100% { opacity: 0; transform: rotate(-35deg) scaleX(1); }
+}
+#enemy-sprite.defeat { animation: enemyDefeat 0.7s steps(7) forwards; }
+@keyframes enemyDefeat {
+    0% { filter: brightness(3) saturate(0); transform: translateX(0) scale(1, 1); opacity: 1; }
+    20% { filter: brightness(1); transform: translateX(6px); }
+    35% { transform: translateX(-6px); }
+    50% { filter: brightness(2.2) saturate(0.3); transform: scale(1.05, 0.9); opacity: 1; }
+    100% { filter: brightness(3); transform: translateY(-14px) scale(0.2, 1.4); opacity: 0; }
+}
+.spark {
+    position: absolute;
+    z-index: 5;
+    pointer-events: none;
+    animation: sparkFly 0.7s steps(7) forwards;
+}
+@keyframes sparkFly {
+    0% { transform: translate(0, 0); opacity: 1; }
+    100% { transform: translate(var(--dx), var(--dy)); opacity: 0; }
+}

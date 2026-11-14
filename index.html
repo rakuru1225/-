@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>暗記クエスト</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DotGothic16&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- 階の名前を出すカード -->
+    <div id="floor-title"><div class="ft-inner"><div id="ft-floor">B1F</div><div id="ft-sub">地下1階</div></div></div>
+
+    <!-- ダンジョン入口へのズームイン＆暗転演出用オーバーレイ -->
+    <div id="dungeon-zoom-overlay"></div>
+
+    <div id="game-container" class="screen-home">
+        <!-- ホーム画面 -->
+        <div id="home-screen" class="screen">
+            <h1>🏰 暗記クエスト</h1>
+            <div id="player-status" class="gold-box">
+                読み込み中...
+            </div>
+            <div id="exp-bar-container" class="exp-bar-grid" style="margin-bottom: 12px;"></div>
+            
+            <button class="retro-btn btn-green" onclick="startBattleWithTransition()">⚔️ クエストに出発する</button>
+            <button class="retro-btn btn-brown" onclick="openMonsterScreen()">📖 モンスター図鑑・問題追加</button>
+            <button class="retro-btn btn-brown" onclick="switchScreen('profile-screen')">👤 冒険者プロフィール</button>
+            <button class="retro-btn btn-brown" onclick="switchScreen('share-screen')">📜 ギルド掲示板（共有）</button>
+        </div>
+
+        <!-- バトル画面（画面いっぱいの横スクロール） -->
+        <div id="battle-screen" class="screen hidden">
+            <!-- 上部情報バー（階層・敵の数・レベル・音） -->
+            <div id="battle-hud">
+                <div class="hud-row">
+                    <span id="battle-floor-label">B1F</span>
+                    <span id="battle-progress">敵 1 / 5</span>
+                    <span id="battle-player-level-top">LV.1</span>
+                    <button id="sound-btn" class="hud-btn" onclick="toggleSound()">音 ON</button>
+                </div>
+                <div id="battle-exp-bar-container" class="exp-bar-grid"></div>
+            </div>
+
+            <!-- 自動横スクロールステージ（画面の横いっぱい） -->
+            <div id="sc-stage">
+                <div id="wall-layer"></div>
+                <div id="floor-layer"></div>
+                <i class="mote m1"></i><i class="mote m2"></i><i class="mote m3"></i><i class="mote m4"></i><i class="mote m5"></i>
+                <div id="player-sprite"></div>
+                <div id="enemy-sprite"></div>
+                <div id="battle-message-overlay"></div>
+            </div>
+
+            <!-- 下のパネル（体力・問題・選択肢） -->
+            <div id="battle-panel">
+                <div class="status-row">
+                    <div class="hp-box">
+                        <span class="hp-label">HP</span>
+                        <div id="question-hearts" class="heart-container-large"></div>
+                    </div>
+                    <div id="camp-container"></div>
+                </div>
+                <div class="gold-box q-box">
+                    <p id="question-text">問題文がここに表示されます</p>
+                    <p id="battle-message"></p>
+                </div>
+                <div id="choices-container" class="ut-choices-grid"></div>
+                <div class="home-row">
+                    <button class="retro-btn btn-subtle-home" onclick="quitBattle()">🏠 ホームに戻る</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- クエスト結果画面 -->
+        <div id="result-screen" class="screen hidden">
+            <h2>🏆 クエスト結果</h2>
+            <div class="gold-box" style="text-align: left; font-size: 0.85rem; line-height: 1.5; padding: 14px;">
+                <p>討伐クエスト完了！お疲れ様でした。</p>
+                <p>・クリア問題数: <span id="res-total">0</span>問</p>
+                <p>・1発正解数: <span id="res-perfect">0</span>問</p>
+                <p>・獲得トータルXP: +<span id="res-exp">0</span> XP</p>
+            </div>
+            <button class="retro-btn btn-green" style="padding: 8px; font-size: 0.85rem;" onclick="switchScreen('home-screen')">🏰 ホームに戻る</button>
+        </div>
+
+        <!-- モンスター図鑑・問題管理画面 -->
+        <div id="monster-screen" class="screen hidden">
+            <h2>📜 ギルド・クエストボード</h2>
+            <p style="font-size: 0.7rem; color: #ff9992; margin: 0 0 4px 0; text-align: center;">※苦手な問題は赤く表示されます（右上の❌でボードから剥がせます）</p>
+            
+            <div id="quest-board" class="wooden-board"></div>
+
+            <div class="gold-box" style="margin-top: 4px; margin-bottom: 4px; padding: 8px;">
+                <p style="font-size: 0.75rem; color: #ffcc00; margin: 0 0 6px 0; font-weight: bold;">
+                    📷 問題の追加・作成
+                </p>
+                
+                <div style="margin-bottom: 6px;">
+                    <label for="image-input" style="display: block; background: #594333; color: #ffcc00; text-align: center; padding: 6px; border-radius: 3px; border: 2px solid #8c6950; cursor: pointer; font-size: 0.75rem; box-shadow: inset 0 1px 0 #a67c5e;">
+                        📁 写真を選択してAI一括解析（3枚まで）
+                    </label>
+                    <input type="file" id="image-input" accept="image/*" multiple style="display: none;" onchange="handleImageUpload(event)">
+                </div>
+                <div id="image-preview"></div>
+                <div id="create-msg" style="text-align: center; font-size: 0.7rem; color: #ffcc00; margin-bottom: 4px;"></div>
+
+                <button class="retro-btn btn-brown" style="margin: 0; padding: 6px; font-size: 0.75rem;" onclick="openAddModal()">
+                    ✏️ 手入力で問題を追加する
+                </button>
+            </div>
+
+            <button class="retro-btn btn-brown" style="padding: 6px; font-size: 0.8rem;" onclick="switchScreen('home-screen')">🏠 ホームに戻る</button>
+        </div>
+
+        <!-- 詳細・編集・新規追加モーダル画面 -->
+        <div id="detail-modal" class="screen hidden" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.88); z-index: 10; padding: 12px; box-sizing: border-box; display: flex; flex-direction: column; justify-content: center; align-items: center;">
+            <div class="parchment-card" style="width: 100%; max-height: 92%; overflow-y: auto; padding: 10px; box-sizing: border-box;">
+                <h3 id="modal-title" style="color: #2b1d0c; margin-top: 0; font-size: 0.9rem; text-align: center; border-bottom: 2px dashed #a68965; padding-bottom: 4px;">モンスター討伐・学習記録</h3>
+                
+                <div id="modal-stats" style="font-size: 0.75rem; background: #dcd0b8; padding: 5px; margin-bottom: 4px; border: 1px solid #a68965; color: #332211;">
+                    正解数: 0回 / 間違い数: 0回
+                </div>
+
+                <label style="font-size: 0.75rem; display: block; margin-top: 2px;">問題文:</label>
+                <textarea id="modal-question" class="pixel-input" rows="2" style="background: #fff; color: #000; border: 1px solid #a68965; font-size: 0.75rem;"></textarea>
+                
+                <label style="font-size: 0.7rem; display: block;">選択肢 ア:</label>
+                <input type="text" id="modal-choice-0" class="pixel-input" style="background: #fff; color: #000; border: 1px solid #a68965; font-size: 0.75rem; margin-bottom: 2px;">
+                <label style="font-size: 0.7rem; display: block;">選択肢 イ:</label>
+                <input type="text" id="modal-choice-1" class="pixel-input" style="background: #fff; color: #000; border: 1px solid #a68965; font-size: 0.75rem; margin-bottom: 2px;">
+                <label style="font-size: 0.7rem; display: block;">選択肢 ウ:</label>
+                <input type="text" id="modal-choice-2" class="pixel-input" style="background: #fff; color: #000; border: 1px solid #a68965; font-size: 0.75rem; margin-bottom: 2px;">
+                <label style="font-size: 0.7rem; display: block;">選択肢 エ:</label>
+                <input type="text" id="modal-choice-3" class="pixel-input" style="background: #fff; color: #000; border: 1px solid #a68965; font-size: 0.75rem; margin-bottom: 2px;">
+                
+                <label style="font-size: 0.7rem; display: block;">正解 (ア, イ, ウ, エ):</label>
+                <input type="text" id="modal-answer" class="pixel-input" style="background: #fff; color: #000; border: 1px solid #a68965; font-size: 0.75rem; margin-bottom: 4px; width: 50px;">
+
+                <label style="font-size: 0.7rem; display: block;">解説:</label>
+                <textarea id="modal-explanation" class="pixel-input" rows="2" style="background: #fff; color: #000; border: 1px solid #a68965; font-size: 0.75rem; margin-bottom: 6px;"></textarea>
+
+                <div style="display: flex; gap: 4px;">
+                    <button class="retro-btn btn-green" style="margin:0; padding: 5px; font-size: 0.75rem;" onclick="saveModalEdit()">💾 保存</button>
+                    <button id="modal-delete-btn" class="retro-btn" style="margin:0; padding: 5px; font-size: 0.75rem; background: #992222; border: 2px solid #cc4444;" onclick="deleteModalQuiz()">🗑️ ボードから剥がす</button>
+                    <button class="retro-btn btn-brown" style="margin:0; padding: 5px; font-size: 0.75rem;" onclick="closeDetailModal()">閉じる</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 冒険者プロフィール画面 -->
+        <div id="profile-screen" class="screen hidden">
+            <h2>👤 冒険者プロフィール</h2>
+            <div class="gold-box" style="text-align: left; font-size: 0.8rem; line-height: 1.5;">
+                <p style="margin: 4px 0;">冒険者ネーム：</p>
+                <div style="display: flex; gap: 4px; margin-bottom: 8px;">
+                    <input type="text" id="input-player-name" class="pixel-input" placeholder="名前を入力" style="flex: 1; margin: 0; font-size: 0.8rem;">
+                    <button class="retro-btn btn-brown" onclick="savePlayerName()" style="margin: 0; padding: 4px 8px; font-size: 0.75rem; width: auto;">保存</button>
+                </div>
+                <p style="margin: 4px 0;">レベル: <span id="prof-level">1</span> | 討伐数: <span id="prof-defeats">0</span>体</p>
+                
+                <hr style="border-color: #6b533f; margin: 8px 0;">
+                <p style="margin: 4px 0; font-weight: bold; color: #ffcc00;">💾 学習データのバックアップ・復元</p>
+                <div style="display: flex; gap: 4px; margin-top: 4px;">
+                    <button class="retro-btn btn-green" onclick="exportData()" style="padding: 5px; font-size: 0.7rem; margin:0;">📥 書き出し(保存)</button>
+                    <label class="retro-btn btn-brown" style="padding: 5px; font-size: 0.7rem; margin:0; text-align: center; cursor: pointer;">
+                        📤 読み込み(復元) <input type="file" accept=".json" style="display: none;" onchange="importData(event)">
+                    </label>
+                </div>
+            </div>
+            <button class="retro-btn btn-brown" style="padding: 6px; font-size: 0.8rem;" onclick="switchScreen('home-screen')">🏠 ホームに戻る</button>
+        </div>
+
+        <!-- ギルド掲示板（共有）画面 -->
+        <div id="share-screen" class="screen hidden">
+            <h2>📜 ギルド掲示板</h2>
+            <div class="gold-box" style="text-align: left; font-size: 0.8rem;">
+                <p style="margin: 4px 0;">共有コードを入力して他冒険者のデッキを取り込もう！</p>
+                <input type="text" id="share-code-input" class="pixel-input" placeholder="例: player_xxxx" style="font-size: 0.8rem; margin-bottom: 6px;">
+                <button class="retro-btn btn-green" style="padding: 6px; font-size: 0.8rem;" onclick="importDeck()">📥 問題を取り込む</button>
+                <p id="share-msg" style="text-align: center; color: #ffcc00; font-size: 0.75rem; margin-top: 6px;"></p>
+            </div>
+            <button class="retro-btn btn-brown" style="padding: 6px; font-size: 0.8rem;" onclick="switchScreen('home-screen')">🏠 ホームに戻る</button>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="app.js"></script>
+</body>
+</html>
